@@ -7,19 +7,6 @@
         <div class="input-error">
           <p v-if="inputError">{{ inputError }}</p>
         </div>
-        <div class="dimension-select">
-          <div>
-            <label>Rows</label>
-            <input v-model="rows" type="number" placeholder="rows" />
-          </div>
-          <div>
-            <label>Cols</label>
-            <input v-model="cols" type="number" placeholder="cols" />
-          </div>
-        </div>
-        <div class="row-col-error">
-          <p v-if="!rowColRatioIsValid">Invalid row to column ratio</p>
-        </div>
         <button type="submit">ENCODE</button>
       </form>
       <div v-if="encodedString" class="result">
@@ -42,89 +29,72 @@
 export default {
   data() {
     return {
-      // rawInput: "una amiga esta yendo a un barco.",
       rawInput: "That's one small step for man, one giant leap for mankind.",
       encodedString: "",
+      matrix: [] as string[][],
       paddedMatrix: [] as string[],
       inputError: "",
-      rows: 7,
-      cols: 7,
     };
   },
   mounted() {
     this.encode();
   },
-  computed: {
-    rowColRatioIsValid() {
-      return this.cols >= this.rows && this.cols - this.rows <= 1;
-    },
-  },
   methods: {
     encode() {
-      if (!this.rowColRatioIsValid) return;
-      const lower = this.rawInput.toLowerCase();
-      const normalized = lower.replace(/[^a-zA-Z]/g, "");
+      const normalized = this.rawInput.replace(/[^a-zA-Z]/g, "").toLowerCase();
+
       if (normalized.length > 64) {
         this.inputError =
           "Normalized text should be 64 characters long at most";
         return;
       }
-      const matrix = this.spreadIntoMatrix(this.rows, this.cols, normalized);
-      this.encodedString = this.encodeFromMatrix(this.rows, this.cols, matrix);
-      this.paddedMatrix = this.generatePaddedMatrix(
-        this.rows,
-        this.cols,
-        this.encodedString
-      );
+
+      const size = Math.round(Math.sqrt(normalized.length));
+      this.matrix = this.spreadIntoMatrix(size, normalized);
+      this.encodedString = this.encodeFromMatrix(size, this.matrix);
+      this.paddedMatrix = this.generatePaddedMatrix(size, this.encodedString);
     },
 
-    spreadIntoMatrix(
-      rows: number,
-      cols: number,
-      normalized: string
-    ): string[][] {
+    spreadIntoMatrix(size: number, normalized: string): string[][] {
       let cursor = 0;
       const matrix = [];
-      for (let row = 0; row < rows; row++) {
-        matrix.push(new Array(cols));
-        for (let col = 0; col < cols; col++) {
-          matrix[row][col] = normalized[cursor];
+      for (let row = 0; row < size; row++) {
+        matrix.push(new Array(size));
+        for (let col = 0; col < size; col++) {
+          matrix[row][col] = normalized[cursor] || "";
           cursor++;
         }
       }
-
       return matrix;
     },
 
-    encodeFromMatrix(rows: number, cols: number, matrix: string[][]): string {
+    encodeFromMatrix(size: number, matrix: string[][]): string {
       let encodedStr = "";
-      for (let col = 0; col < cols; col++) {
-        for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < size; col++) {
+        for (let row = 0; row < size; row++) {
           encodedStr += matrix[row][col] || "";
         }
       }
       return encodedStr;
     },
 
-    generatePaddedMatrix(rows: number, cols: number, str: string): string[] {
-      const trailingSpaces = str.length % cols;
-      console.log(str);
+    generatePaddedMatrix(size: number, str: string): string[] {
+      const trailingSpaces = str.length % size;
       const chunks = [];
-      for (let col = 0; col < cols; col++) {
+      for (let row = 0; row < size; row++) {
         let chunk = "";
-        let start = col * cols;
-        let amount = cols;
-        if (trailingSpaces && col >= trailingSpaces) {
+        let start = row * size;
+        let amount = size;
+        if (trailingSpaces && row >= trailingSpaces) {
           amount--;
-          if (col > trailingSpaces) {
-            start = col * cols - col + trailingSpaces;
+          if (row >= trailingSpaces) {
+            start = row * size - row + trailingSpaces;
           }
         }
-        console.log(start, amount);
         for (let i = start; i < start + amount; i++) {
           chunk += str[i] || "";
         }
-        if (col >= trailingSpaces) chunk += " ";
+        if (row >= trailingSpaces) chunk += " ";
         chunks.push(chunk);
       }
       return chunks;
@@ -143,10 +113,10 @@ main {
 .container {
   max-width: 1200px;
 }
-
 .user-input {
   margin-bottom: 2rem;
 }
+
 textarea {
   display: block;
   resize: vertical;
@@ -154,23 +124,10 @@ textarea {
   min-height: 80px;
 }
 
-.dimension-select {
-  display: flex;
-  gap: 1rem;
-  margin: 0.5rem 0;
-}
-
-label {
-  display: block;
-  font-size: 14px;
-  font-weight: bold;
-}
-
 button {
   display: block;
   padding: 0.5rem 1rem;
   min-width: 160px;
-  /* margin-left: auto; */
 }
 
 .encoded-string {
@@ -182,6 +139,7 @@ button {
   color: white;
   padding: 1rem;
   font-family: "Courier New", Courier, monospace;
+  margin-bottom: 1rem;
 }
 
 .row-col-error,
