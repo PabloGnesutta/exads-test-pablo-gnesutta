@@ -3,19 +3,21 @@
     <div class="container">
       <form class="user-input" @submit.prevent="encode">
         <h2>Raw input</h2>
-        <textarea v-model="rawInput" @input="inputError = ''"></textarea>
+        <textarea v-model="rawInput" @input="tryEncode"></textarea>
         <div class="input-error">
-          <p v-if="inputError">{{ inputError }}</p>
+          <p v-if="inputError">
+            Normalized input should be 64 characters long at most
+          </p>
         </div>
         <button type="submit">ENCODE</button>
       </form>
       <div v-if="encodedString" class="result">
         <div class="encoded-string">
-          <h3>Encoded string:</h3>
-          {{ encodedString }}
+          <h3>Encoded:</h3>
+          <span> {{ encodedString }} </span>
         </div>
         <div>
-          <h3>Padded matrix:</h3>
+          <h3>Readable:</h3>
           <div class="padded-matrix">
             <div v-for="item in paddedMatrix" :key="item">{{ item }}</div>
           </div>
@@ -33,24 +35,20 @@ export default {
       encodedString: "",
       matrix: [] as string[][],
       paddedMatrix: [] as string[],
-      inputError: "",
     };
   },
-  mounted() {
-    this.encode();
+  computed: {
+    normalizedInput() {
+      return this.rawInput.replace(/[^a-zA-Z]/g, "").toLowerCase();
+    },
+    inputError() {
+      return this.normalizedInput.length > 64;
+    },
   },
   methods: {
     encode() {
-      const normalized = this.rawInput.replace(/[^a-zA-Z]/g, "").toLowerCase();
-
-      if (normalized.length > 64) {
-        this.inputError =
-          "Normalized text should be 64 characters long at most";
-        return;
-      }
-
-      const size = Math.round(Math.sqrt(normalized.length));
-      this.matrix = this.spreadIntoMatrix(size, normalized);
+      const size = Math.round(Math.sqrt(this.normalizedInput.length));
+      this.matrix = this.spreadIntoMatrix(size, this.normalizedInput);
       this.encodedString = this.encodeFromMatrix(size, this.matrix);
       this.paddedMatrix = this.generatePaddedMatrix(size, this.encodedString);
     },
@@ -111,9 +109,11 @@ main {
 }
 
 .container {
-  max-width: 1200px;
+  width: 100%;
+  max-width: 400px;
 }
 .user-input {
+  width: 100%;
   margin-bottom: 2rem;
 }
 
@@ -128,10 +128,14 @@ button {
   display: block;
   padding: 0.5rem 1rem;
   min-width: 160px;
+  cursor: pointer;
 }
 
 .encoded-string {
   margin-bottom: 1rem;
+}
+.encoded-string span {
+  cursor: text;
 }
 
 .padded-matrix {
@@ -139,7 +143,9 @@ button {
   color: white;
   padding: 1rem;
   font-family: "Courier New", Courier, monospace;
+  margin-top: 0.25rem;
   margin-bottom: 1rem;
+  cursor: text;
 }
 
 .row-col-error,
