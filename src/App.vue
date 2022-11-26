@@ -3,7 +3,7 @@
     <div class="container">
       <form class="user-input" @submit.prevent="encode">
         <h2>Raw input</h2>
-        <textarea v-model="rawInput" @input="tryEncode"></textarea>
+        <textarea v-model="rawInput"></textarea>
         <div class="input-error">
           <p v-if="inputError">
             Normalized input should be 64 characters long at most
@@ -47,18 +47,23 @@ export default {
   },
   methods: {
     encode() {
-      const size = Math.round(Math.sqrt(this.normalizedInput.length));
-      this.matrix = this.spreadIntoMatrix(size, this.normalizedInput);
-      this.encodedString = this.encodeFromMatrix(size, this.matrix);
-      this.paddedMatrix = this.generatePaddedMatrix(size, this.encodedString);
+      const cols = Math.ceil(Math.sqrt(this.normalizedInput.length));
+      const rows = Math.ceil(Math.sqrt(this.normalizedInput.length));
+      this.matrix = this.spreadIntoMatrix(rows, cols, this.normalizedInput);
+      this.encodedString = this.encodeFromMatrix(rows, cols, this.matrix);
+      this.paddedMatrix = this.generatePaddedMatrix(rows, cols, this.matrix);
     },
 
-    spreadIntoMatrix(size: number, normalized: string): string[][] {
+    spreadIntoMatrix(
+      rows: number,
+      cols: number,
+      normalized: string
+    ): string[][] {
       let cursor = 0;
       const matrix = [];
-      for (let row = 0; row < size; row++) {
-        matrix.push(new Array(size));
-        for (let col = 0; col < size; col++) {
+      for (let row = 0; row < rows; row++) {
+        matrix.push(new Array(rows));
+        for (let col = 0; col < cols; col++) {
           matrix[row][col] = normalized[cursor] || "";
           cursor++;
         }
@@ -66,33 +71,27 @@ export default {
       return matrix;
     },
 
-    encodeFromMatrix(size: number, matrix: string[][]): string {
+    encodeFromMatrix(rows: number, cols: number, matrix: string[][]): string {
       let encodedStr = "";
-      for (let col = 0; col < size; col++) {
-        for (let row = 0; row < size; row++) {
+      for (let col = 0; col < cols; col++) {
+        for (let row = 0; row < rows; row++) {
           encodedStr += matrix[row][col] || "";
         }
       }
       return encodedStr;
     },
 
-    generatePaddedMatrix(size: number, str: string): string[] {
-      const trailingSpaces = str.length % size;
+    generatePaddedMatrix(
+      rows: number,
+      cols: number,
+      matrix: string[][]
+    ): string[] {
       const chunks = [];
-      for (let row = 0; row < size; row++) {
+      for (let col = 0; col < cols; col++) {
         let chunk = "";
-        let start = row * size;
-        let amount = size;
-        if (trailingSpaces && row >= trailingSpaces) {
-          amount--;
-          if (row >= trailingSpaces) {
-            start = row * size - row + trailingSpaces;
-          }
+        for (let row = 0; row < rows; row++) {
+          chunk += matrix[row][col] || "";
         }
-        for (let i = start; i < start + amount; i++) {
-          chunk += str[i] || "";
-        }
-        if (row >= trailingSpaces) chunk += " ";
         chunks.push(chunk);
       }
       return chunks;
