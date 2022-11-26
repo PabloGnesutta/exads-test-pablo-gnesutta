@@ -47,23 +47,18 @@ export default {
   },
   methods: {
     encode() {
-      const cols = Math.ceil(Math.sqrt(this.normalizedInput.length));
-      const rows = Math.ceil(Math.sqrt(this.normalizedInput.length));
-      this.matrix = this.spreadIntoMatrix(rows, cols, this.normalizedInput);
-      this.encodedString = this.encodeFromMatrix(rows, cols, this.matrix);
-      this.paddedMatrix = this.generatePaddedMatrix(rows, cols, this.matrix);
+      const size = Math.ceil(Math.sqrt(this.normalizedInput.length));
+      this.matrix = this.spreadIntoMatrix(size, this.normalizedInput);
+      this.encodedString = this.encodeFromMatrix(size, this.matrix);
+      this.paddedMatrix = this.generatePaddedMatrix(size, this.matrix);
     },
 
-    spreadIntoMatrix(
-      rows: number,
-      cols: number,
-      normalized: string
-    ): string[][] {
+    spreadIntoMatrix(size: number, normalized: string): string[][] {
       let cursor = 0;
       const matrix = [];
-      for (let row = 0; row < rows; row++) {
-        matrix.push(new Array(rows));
-        for (let col = 0; col < cols; col++) {
+      for (let row = 0; row < size; row++) {
+        matrix.push(new Array(size));
+        for (let col = 0; col < size; col++) {
           matrix[row][col] = normalized[cursor] || "";
           cursor++;
         }
@@ -71,25 +66,21 @@ export default {
       return matrix;
     },
 
-    encodeFromMatrix(rows: number, cols: number, matrix: string[][]): string {
+    encodeFromMatrix(size: number, matrix: string[][]): string {
       let encodedStr = "";
-      for (let col = 0; col < cols; col++) {
-        for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < size; col++) {
+        for (let row = 0; row < size; row++) {
           encodedStr += matrix[row][col] || "";
         }
       }
       return encodedStr;
     },
 
-    generatePaddedMatrix(
-      rows: number,
-      cols: number,
-      matrix: string[][]
-    ): string[] {
+    generatePaddedMatrix(size: number, matrix: string[][]): string[] {
       const chunks = [];
-      for (let col = 0; col < cols; col++) {
+      for (let col = 0; col < size; col++) {
         let chunk = "";
-        for (let row = 0; row < rows; row++) {
+        for (let row = 0; row < size; row++) {
           chunk += matrix[row][col] || "";
         }
         chunks.push(chunk);
